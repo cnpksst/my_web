@@ -40,6 +40,11 @@
             color: #fff;
             border-radius: 6px;
         }
+        .row-inputs {
+            display: flex;
+            gap: 6px;
+            margin-top: 6px;
+        }
         button {
             background: #1db954;
             color: white;
@@ -90,17 +95,19 @@
 <div class="container">
     <h2>🎵 Web Phát Nhạc Playlist</h2>
 
-    <!-- 1. Chọn nhiều file hoặc thư mục trên iPhone -->
+    <!-- 1. Quét thư mục nhạc tự động từ GitHub -->
     <div class="section">
-        <label>📂 Chọn nhiều file MP3 hoặc Thư mục:</label>
-        <input type="file" id="localFiles" accept="audio/*" multiple webkitdirectory>
+        <label>🌐 Tự động quét thư mục GitHub:</label>
+        <input type="text" id="ghUser" placeholder="Tên tài khoản GitHub (User)">
+        <input type="text" id="ghRepo" placeholder="Tên kho lưu trữ (Repo)">
+        <input type="text" id="ghPath" placeholder="Thư mục chứa nhạc (vd: music)" value="music">
+        <button onclick="loadGitHubFolder()">Quét và tải danh sách nhạc</button>
     </div>
 
-    <!-- 2. Thêm link MP3 trực tiếp (GitHub, Server, v.v.) -->
+    <!-- 2. Chọn nhiều file hoặc thư mục trên thiết bị cá nhân -->
     <div class="section">
-        <label>🔗 Dán Link MP3 Trực Tiếp (URL):</label>
-        <input type="text" id="directLink" placeholder="https://.../baihat.mp3">
-        <button onclick="addDirectAudio()">Thêm vào Playlist</button>
+        <label>📂 Chọn file/thư mục từ iPhone:</label>
+        <input type="file" id="localFiles" accept="audio/*" multiple webkitdirectory>
     </div>
 
     <!-- Danh sách bài hát -->
@@ -132,15 +139,67 @@
     let playlist = [];
     let currentIndex = 0;
 
+    // Tự động quét thư mục trên GitHub thông qua GitHub API
+    async function loadGitHubFolder() {
+        const user = document.getElementById('ghUser').value.trim();
+        const repo = document.getElementById('ghRepo').value.trim();
+        const path = document.getElementById('ghPath').value.trim() || 'music';
+
+        if (!user || !repo) {
+            alert('Vui lòng nhập đầy đủ Tên tài khoản GitHub và Tên Repository!');
+            return;
+        }
+
+        const apiUrl = `https://api.github.com/repos/${user}/${repo}/contents/${path}`;
+
+        try {
+            let response = await fetch(apiUrl);
+            if (!response.ok) {
+                throw new Error('Không tìm thấy thư mục hoặc sai thông tin.');
+            }
+            
+            let files = await response.json();
+            if (!Array.isArray(files)) {
+                throw new Error('Đường dẫn này không phải là một thư mục hợp lệ.');
+            }
+
+            let addedCount = 0;
+            files.forEach(file => {
+                // Kiểm tra nếu là file audio (.mp3, .m4a, v.v.)
+                if (file.type === 'file' && file.name.match(/\.(mp3|m4a|wav|aac)$/i)) {
+                    // Tránh thêm trùng lặp
+                    if (!playlist.some(p => p.url === file.download_url)) {
+                        playlist.push({
+                            name: file.name,
+                            url: file.download_url
+                        });
+                        addedCount++;
+                    }
+                }
+            });
+
+            renderPlaylist();
+            if (playlist.length > 0 && audioPlayer.paused && !audioPlayer.src) {
+                playTrack(0);
+            }
+
+            alert(`Đã quét thành công và thêm ${addedCount} bài hát từ GitHub!`);
+        } catch (error) {
+            alert('Lỗi kết nối GitHub API: ' + error.message + '\nHãy kiểm tra lại tên tài khoản, repo và tên thư mục.');
+        }
+    }
+
     // Xử lý khi chọn nhiều file hoặc thư mục từ iPhone
     document.getElementById('localFiles').addEventListener('change', function(event) {
         const files = event.target.files;
         for (let file of files) {
             if (file.type.startsWith('audio/') || file.name.match(/\.(mp3|m4a|wav|aac)$/i)) {
-                playlist.push({
-                    name: file.name,
-                    url: URL.createObjectURL(file)
-                });
+                if (!playlist.some(p => p.name === file.name)) {
+                    playlist.push({
+                        name: file.name,
+                        url: URL.createObjectURL(file)
+                    });
+                }
             }
         }
         renderPlaylist();
@@ -148,33 +207,6 @@
             playTrack(0);
         }
     });
-
-    // Thêm link MP3 trực tiếp vào playlist
-    function addDirectAudio() {
-        let url = document.getElementById('directLink').value.trim();
-        if (!url) {
-            alert('Vui lòng nhập đường dẫn URL của file MP3!');
-            return;
-        }
-
-        // Lấy tên file từ URL để hiển thị
-        let fileName = url.substring(url.lastIndexOf('/') + 1) || 'Bài hát Online';
-        try {
-            fileName = decodeURIComponent(fileName.split('?')[0]);
-        } catch (e) {}
-
-        playlist.push({
-            name: fileName,
-            url: url
-        });
-
-        document.getElementById('directLink').value = '';
-        renderPlaylist();
-        
-        if (playlist.length === 1) {
-            playTrack(0);
-        }
-    }
 
     // Hiển thị danh sách phát ra giao diện
     function renderPlaylist() {
