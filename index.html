@@ -151,33 +151,46 @@
         }
     });
 
-    // Thêm link Google Drive vào playlist
-    function addDriveAudio() {
-        let rawLink = document.getElementById('driveLink').value.trim();
-        let fileId = '';
+    // Thêm link Google Drive vào playlist (Đã tối ưu để vượt qua lỗi chặn của Google)
+function addDriveAudio() {
+    let rawLink = document.getElementById('driveLink').value.trim();
+    let fileId = '';
 
-        if (rawLink.includes('/file/d/')) {
-            fileId = rawLink.split('/file/d/')[1].split('/')[0];
-        } else if (rawLink.includes('id=')) {
-            fileId = rawLink.split('id=')[1].split('&')[0];
+    // Xử lý trích xuất File ID từ nhiều dạng link Google Drive khác nhau
+    if (rawLink.includes('/file/d/')) {
+        let parts = rawLink.split('/file/d/');
+        if (parts.length > 1) {
+            fileId = parts[1].split('/')[0];
         }
-
-        if (fileId) {
-            const directUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
-            playlist.push({
-                name: `Google Drive (${fileId.substring(0, 6)}...)`,
-                url: directUrl
-            });
-            document.getElementById('driveLink').value = '';
-            renderPlaylist();
-            if (playlist.length === 1) {
-                playTrack(0);
-            }
-        } else {
-            alert('Link Google Drive không hợp lệ!');
-        }
+    } else if (rawLink.includes('id=')) {
+        let urlParams = new URLSearchParams(rawLink.split('?')[1]);
+        fileId = urlParams.get('id');
     }
 
+    if (fileId) {
+        // Sử dụng định dạng link stream trực tiếp hỗ trợ tệp lớn của Google Drive
+        // Thêm tham số &confirm=t để tự động bỏ qua trang cảnh báo quét virus của Google
+        const directUrl = `https://drive.google.com/uc?export=download&id=${fileId}&confirm=t`;
+        
+        // Tạo tên hiển thị tạm thời hoặc dùng ID
+        let trackName = `Google Drive (${fileId.substring(0, 8)}...)`;
+
+        playlist.push({
+            name: trackName,
+            url: directUrl
+        });
+
+        document.getElementById('driveLink').value = '';
+        renderPlaylist();
+        
+        if (playlist.length === 1) {
+            playTrack(0);
+        }
+        alert("Đã thêm file từ Google Drive vào danh sách phát!");
+    } else {
+        alert('Link Google Drive không hợp lệ! Hãy đảm bảo bạn dán đúng link chia sẻ.');
+    }
+}
     // Hiển thị danh sách phát ra giao diện
     function renderPlaylist() {
         if (playlist.length === 0) {
