@@ -141,9 +141,9 @@
 
     // Tự động quét thư mục trên GitHub thông qua GitHub API
     async function loadGitHubFolder() {
-        const user = document.getElementById('ghUser').value.trim();
-        const repo = document.getElementById('ghRepo').value.trim();
-        const path = document.getElementById('ghPath').value.trim() || 'music';
+        const user = document.getElementById('ghUser').value.trim() || 'cnpksst';
+        const repo = document.getElementById('ghRepo').value.trim() || 'my_web';
+        const path = document.getElementById('ghPath').value.trim() || 'nhac';
 
         if (!user || !repo) {
             alert('Vui lòng nhập đầy đủ Tên tài khoản GitHub và Tên Repository!');
