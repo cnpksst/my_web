@@ -90,16 +90,17 @@
 <div class="container">
     <h2>🎵 Web Phát Nhạc Playlist</h2>
 
-    <!-- 1. Chọn nhiều file hoặc thư mục trên thiết bị -->
+    <!-- 1. Chọn nhiều file hoặc thư mục trên iPhone -->
     <div class="section">
-        <label>📂 Chọn thư mục hoặc nhiều file MP3:</label>
+        <label>📂 Chọn nhiều file MP3 hoặc Thư mục:</label>
         <input type="file" id="localFiles" accept="audio/*" multiple webkitdirectory>
     </div>
 
-    <!-- 2. Tải danh sách bài hát có sẵn cùng thư mục trên GitHub/Server -->
+    <!-- 2. Thêm link MP3 trực tiếp (GitHub, Server, v.v.) -->
     <div class="section">
-        <label>🌐 Nhạc có sẵn trên Server/GitHub:</label>
-        <button onclick="loadServerPlaylist()">Tải danh sách nhạc cố định</button>
+        <label>🔗 Dán Link MP3 Trực Tiếp (URL):</label>
+        <input type="text" id="directLink" placeholder="https://.../baihat.mp3">
+        <button onclick="addDirectAudio()">Thêm vào Playlist</button>
     </div>
 
     <!-- Danh sách bài hát -->
@@ -131,18 +132,15 @@
     let playlist = [];
     let currentIndex = 0;
 
-    // Tự động quét và lập danh sách từ thư mục/file người dùng chọn trên thiết bị
+    // Xử lý khi chọn nhiều file hoặc thư mục từ iPhone
     document.getElementById('localFiles').addEventListener('change', function(event) {
         const files = event.target.files;
         for (let file of files) {
             if (file.type.startsWith('audio/') || file.name.match(/\.(mp3|m4a|wav|aac)$/i)) {
-                // Kiểm tra tránh trùng lặp
-                if (!playlist.some(p => p.name === file.name)) {
-                    playlist.push({
-                        name: file.name,
-                        url: URL.createObjectURL(file)
-                    });
-                }
+                playlist.push({
+                    name: file.name,
+                    url: URL.createObjectURL(file)
+                });
             }
         }
         renderPlaylist();
@@ -151,24 +149,31 @@
         }
     });
 
-    // Danh sách các bài hát đặt chung thư mục với index.html trên Server/GitHub
-    // Bạn chỉ cần sửa tên file bên dưới cho khớp với file bạn tải lên GitHub
-    const serverSongs = [
-        { name: "BaiHat1.mp3", url: "./BaiHat1.mp3" },
-        { name: "BaiHat2.mp3", url: "./BaiHat2.mp3" }
-    ];
+    // Thêm link MP3 trực tiếp vào playlist
+    function addDirectAudio() {
+        let url = document.getElementById('directLink').value.trim();
+        if (!url) {
+            alert('Vui lòng nhập đường dẫn URL của file MP3!');
+            return;
+        }
 
-    function loadServerPlaylist() {
-        serverSongs.forEach(song => {
-            if (!playlist.some(p => p.url === song.url)) {
-                playlist.push(song);
-            }
+        // Lấy tên file từ URL để hiển thị
+        let fileName = url.substring(url.lastIndexOf('/') + 1) || 'Bài hát Online';
+        try {
+            fileName = decodeURIComponent(fileName.split('?')[0]);
+        } catch (e) {}
+
+        playlist.push({
+            name: fileName,
+            url: url
         });
+
+        document.getElementById('directLink').value = '';
         renderPlaylist();
-        if (playlist.length > 0 && audioPlayer.paused && !audioPlayer.src) {
+        
+        if (playlist.length === 1) {
             playTrack(0);
         }
-        alert("Đã tải danh sách nhạc từ server!");
     }
 
     // Hiển thị danh sách phát ra giao diện
