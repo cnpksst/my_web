@@ -3,255 +3,198 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Web Phát Nhạc Playlist</title>
+    <title>Trình Phát Nhạc & Video Đa Nguồn</title>
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #121212;
-            color: #ffffff;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        .container {
-            width: 100%;
-            max-width: 400px;
-            background: #1e1e1e;
-            padding: 20px;
-            border-radius: 16px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-        }
-        h2 { text-align: center; margin-bottom: 20px; font-size: 20px; }
-        .section {
-            margin-bottom: 15px;
-            background: #2a2a2a;
-            padding: 12px;
-            border-radius: 10px;
-        }
-        input[type="file"], input[type="text"] {
-            width: 100%;
-            padding: 8px;
-            margin-top: 6px;
-            box-sizing: border-box;
-            background: #333;
-            border: 1px solid #444;
-            color: #fff;
-            border-radius: 6px;
-        }
-        button {
-            background: #1db954;
-            color: white;
-            border: none;
-            padding: 10px;
-            width: 100%;
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 8px;
-        }
-        button:active { background: #1aa34a; }
-        audio {
-            width: 100%;
-            margin-top: 15px;
-        }
-        .playlist {
-            max-height: 150px;
-            overflow-y: auto;
-            background: #121212;
-            border-radius: 6px;
-            padding: 5px;
-            margin-top: 10px;
-        }
-        .playlist-item {
-            padding: 6px 8px;
-            font-size: 13px;
-            cursor: pointer;
-            border-bottom: 1px solid #222;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .playlist-item.active {
-            color: #1db954;
-            font-weight: bold;
-        }
-        .timer-display {
-            text-align: center;
-            font-size: 14px;
-            color: #b3b3b3;
-            margin-top: 8px;
-        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f5f7; margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #007aff; }
+        .section { border: 1px solid #e5e5ea; padding: 15px; border-radius: 8px; margin-bottom: 15px; background: #fafafa; }
+        h3 { margin-top: 0; font-size: 16px; color: #555; }
+        input[type="text"], input[type="file"] { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
+        button { background: #007aff; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-size: 14px; margin-top: 8px; width: 100%; }
+        button:hover { background: #0056b3; }
+        #player-container { text-align: center; margin: 20px 0; display: none; }
+        video, audio { width: 100%; max-height: 300px; background: #000; border-radius: 8px; }
+        #now-playing { font-weight: bold; margin-top: 5px; color: #333; font-size: 14px; }
+        .playlist { max-height: 200px; overflow-y: auto; border: 1px solid #ddd; border-radius: 6px; background: white; padding: 0; list-style: none; }
+        .playlist li { padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; font-size: 14px; display: flex; justify-content: space-between; }
+        .playlist li:hover { background: #f0f0f5; }
+        .playlist li.active { background: #e3f2fd; color: #007aff; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>🎵 Web Phát Nhạc Playlist</h2>
+    <h2>🎵 Media Multi-Player</h2>
 
-    <!-- 1. Chọn nhiều file hoặc thư mục trên iPhone -->
+    <!-- NGUỒN 1: TỪ IPHONE / MÁY TÍNH -->
     <div class="section">
-        <label>📂 Chọn nhiều file MP3 hoặc Thư mục:</label>
-        <!-- multiple giúp chọn nhiều file, webkitdirectory giúp chọn cả thư mục -->
-        <input type="file" id="localFiles" accept="audio/*" multiple webkitdirectory>
+        <h3>1. Chọn file từ thiết bị (iPhone, iPad, PC)</h3>
+        <!-- Thuộc tính multiple cho phép chọn nhiều file cùng lúc trên iOS -->
+        <input type="file" id="local-file-input" accept="audio/*,video/*" multiple>
     </div>
 
-    <!-- 2. Phát nhạc từ Google Drive (Link trực tiếp) -->
+    <!-- NGUỒN 2: TỪ GOOGLE DRIVE -->
     <div class="section">
-        <label>🔗 Thêm Link Google Drive:</label>
-        <input type="text" id="driveLink" placeholder="Dán link chia sẻ Google Drive...">
-        <button onclick="addDriveAudio()">Thêm vào Playlist</button>
+        <h3>2. Dán Link Google Drive (File hoặc Thư mục công khai)</h3>
+        <input type="text" id="drive-url-input" placeholder="Dán link file hoặc link folder vào đây...">
+        <button id="add-drive-btn">Thêm vào danh sách phát</button>
     </div>
 
-    <!-- Danh sách bài hát -->
-    <div class="section">
-        <label>📜 Danh sách phát:</label>
-        <div class="playlist" id="playlistContainer">
-            <div style="text-align:center; color:#777; font-size:12px; padding:10px;">Chưa có bài hát nào</div>
+    <!-- TRÌNH PHÁT MEDIA -->
+    <div id="player-container">
+        <div id="now-playing">Đang phát: Chưa có file</div>
+        <div id="media-wrapper" style="margin-top: 10px;">
+            <!-- Mặc định dùng thẻ video vì nó phát được cả tiếng lẫn hình, tối ưu cho iOS -->
+            <video id="main-player" controls playsinline controlsList="nodownload"></video>
         </div>
     </div>
 
-    <!-- Trình phát nhạc Audio -->
-    <audio id="audioPlayer" controls></audio>
-
-    <!-- 3. Hẹn giờ tắt -->
+    <!-- DANH SÁCH PHÁT -->
     <div class="section">
-        <label>⏱️ Hẹn giờ tắt (phút):</label>
-        <div style="display: flex; gap: 8px; margin-top: 6px;">
-            <input type="number" id="timerMinutes" placeholder="Số phút" min="1" style="margin-top:0;">
-            <button onclick="startTimer()" style="margin-top:0; width: 120px;">Bắt đầu</button>
-        </div>
-        <div class="timer-display" id="timerStatus">Chưa hẹn giờ</div>
+        <h3>📋 Danh sách bài hát / Video (<span id="queue-count">0</span>)</h3>
+        <ul id="playlist-view" class="playlist"></ul>
     </div>
 </div>
 
 <script>
-    const audioPlayer = document.getElementById('audioPlayer');
-    const playlistContainer = document.getElementById('playlistContainer');
-    
     let playlist = [];
-    let currentIndex = 0;
+    let currentIndex = -1;
 
-    // Xử lý khi chọn nhiều file hoặc thư mục
-    document.getElementById('localFiles').addEventListener('change', function(event) {
-        const files = event.target.files;
-        for (let file of files) {
-            // Chỉ nhận file định dạng âm thanh
-            if (file.type.startsWith('audio/') || file.name.match(/\.(mp3|m4a|wav|aac)$/i)) {
-                playlist.push({
-                    name: file.name,
-                    url: URL.createObjectURL(file)
-                });
-            }
+    const localFileInput = document.getElementById('local-file-input');
+    const driveUrlInput = document.getElementById('drive-url-input');
+    const addDriveBtn = document.getElementById('add-drive-btn');
+    const mainPlayer = document.getElementById('main-player');
+    const playlistView = document.getElementById('playlist-view');
+    const playerContainer = document.getElementById('player-container');
+    const nowPlayingText = document.getElementById('now-playing');
+    const queueCount = document.getElementById('queue-count');
+
+    // 1. XỬ LÝ FILE CỤC BỘ (TỪ IPHONE/THIẾT BỊ)
+    localFileInput.addEventListener('change', function(e) {
+        const files = e.target.files;
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            // Tạo Blob URL tạm thời để trình duyệt iOS có thể đọc trực tiếp từ bộ nhớ máy
+            const fileURL = URL.createObjectURL(file);
+            playlist.push({
+                name: file.name,
+                url: fileURL,
+                type: file.type
+            });
         }
-        renderPlaylist();
-        if (playlist.length > 0 && audioPlayer.paused && !audioPlayer.src) {
-            playTrack(0);
+        updatePlaylistUI();
+        if (currentIndex === -1 && playlist.length > 0) playTrack(0);
+        localFileInput.value = ''; // Reset input để có thể chọn lại
+    });
+
+    // 2. XỬ LÝ ĐƯỜNG LINK GOOGLE DRIVE
+    addDriveBtn.addEventListener('click', function() {
+        const url = driveUrlInput.value.trim();
+        if (!url) {
+            alert('Vui lòng dán link Google Drive hợp lệ!');
+            return;
+        }
+
+        // Kiểm tra xem là link File hay link Folder
+        if (url.includes('/drive/folders/') || url.includes('id=')) {
+            // Trường hợp Link Folder
+            // LƯU Ý: Do bảo mật của Google, để lấy HẾT FILE TRONG FOLDER mà không cần backend cần dùng API Key công khai
+            // Ở đây hệ thống sẽ tự bóc tách ID Folder để chuẩn bị hướng xử lý
+            const folderId = extractFolderId(url);
+            if (folderId) {
+                alert('Đang kết nối thư mục. Lưu ý: Đảm bảo thư mục được cấu hình "Bất kỳ ai có đường liên kết đều có thể xem".');
+                // Gọi hàm giả lập hoặc fetch dữ liệu từ API công khai của Google
+                fetchGoogleDriveFolder(folderId);
+            } else {
+                alert('Không thể nhận diện ID Thư mục. Vui lòng kiểm tra lại link!');
+            }
+        } else if (url.includes('/file/d/')) {
+            // Trường hợp Link File riêng lẻ
+            const fileId = extractFileId(url);
+            if (fileId) {
+                // Chuyển đổi thành link stream trực tiếp vượt lỗi trên iOS Safari
+                const streamURL = `https://google.com{fileId}`;
+                playlist.push({
+                    name: `Google Drive File (${fileId.substring(0,5)}...)`,
+                    url: streamURL,
+                    type: 'video/mp4' // Gán mặc định định dạng video/audio để trình phát nhận diện
+                });
+                updatePlaylistUI();
+                if (currentIndex === -1 && playlist.length > 0) playTrack(playlist.length - 1);
+                driveUrlInput.value = '';
+            } else {
+                alert('Đường link file Google Drive không đúng cấu trúc chuẩn!');
+            }
+        } else {
+            alert('Đường link không đúng định dạng Google Drive hợp lệ!');
         }
     });
 
-    // Thêm link Google Drive vào playlist (Đã tối ưu để vượt qua lỗi chặn của Google)
-function addDriveAudio() {
-    let rawLink = document.getElementById('driveLink').value.trim();
-    let fileId = '';
-
-    // Xử lý trích xuất File ID từ nhiều dạng link Google Drive khác nhau
-    if (rawLink.includes('/file/d/')) {
-        let parts = rawLink.split('/file/d/');
-        if (parts.length > 1) {
-            fileId = parts[1].split('/')[0];
-        }
-    } else if (rawLink.includes('id=')) {
-        let urlParams = new URLSearchParams(rawLink.split('?')[1]);
-        fileId = urlParams.get('id');
+    // Hàm trích xuất ID file
+    function extractFileId(url) {
+        const matches = url.match(/\/file\/d\/([a-zA-Z0-9-_]+)/);
+        return matches ? matches[1] : null;
     }
 
-    if (fileId) {
-        // Sử dụng định dạng link stream trực tiếp hỗ trợ tệp lớn của Google Drive
-        // Thêm tham số &confirm=t để tự động bỏ qua trang cảnh báo quét virus của Google
-        const directUrl = `https://drive.google.com/uc?export=download&id=${fileId}&confirm=t`;
+    // Hàm trích xuất ID folder
+    function extractFolderId(url) {
+        const matches = url.match(/\/folders\/([a-zA-Z0-9-_]+)/);
+        if (matches) return matches[1];
+        const paramMatches = url.match(/[?&]id=([a-zA-Z0-9-_]+)/);
+        return paramMatches ? paramMatches[1] : null;
+    }
+
+    // Lấy danh sách file từ thư mục Google Drive công khai (Yêu cầu folder ở chế độ Anyone with link can view)
+    function fetchGoogleDriveFolder(folderId) {
+        // Sử dụng một proxy hoặc công cụ mở của Google Script (Ở đây cấu hình chạy trực tiếp link nén của Google)
+        // Cách tối ưu nhất cho client-side là tạo 1 file đơn để stream, với thư mục ta add tạm phần tử đại diện
+        // Hoặc bạn có thể thêm API key của bạn vào đây để quét toàn bộ file:
+        const proxyUrl = `https://allorigins.win{encodeURIComponent('https://google.com' + folderId)}`;
         
-        // Tạo tên hiển thị tạm thời hoặc dùng ID
-        let trackName = `Google Drive (${fileId.substring(0, 8)}...)`;
+        fetch(proxyUrl)
+            .then(response => response.json())
+            .then(data => {
+                // Phân tích HTML từ trang nhúng thư mục của Google để lấy danh sách file mà không cần API Key phức tạp
+                const html = data.contents;
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const scriptTags = doc.querySelectorAll('script');
+                let foundFiles = false;
 
-        playlist.push({
-            name: trackName,
-            url: directUrl
-        });
+                scriptTags.forEach(script => {
+                    const content = script.textContent;
+                    if (content.includes('initFolder')) {
+                        // Tìm kiếm các chuỗi ID file nằm trong dữ liệu cấu trúc của Google
+                        const idRegex = /"([a-zA-Z0-9-_]{25,})"/g;
+                        let match;
+                        let ids = [];
+                        while ((match = idRegex.exec(content)) !== null) {
+                            // Lọc các ID hợp lệ tránh trùng lặp với ID thư mục gốc
+                            if (match[1] !== folderId && !ids.includes(match[1])) {
+                                ids.push(match[1]);
+                            }
+                        }
+                        
+                        if(ids.length > 0) {
+                            ids.forEach((id, index) => {
+                                playlist.push({
+                                    name: `Folder Item #${index + 1} (${id.substring(0,5)})`,
+                                    url: `https://google.com{id}`,
+                                    type: 'video/mp4'
+                                });
+                            });
+                            foundFiles = true;
+                        }
+                    }
+                });
 
-        document.getElementById('driveLink').value = '';
-        renderPlaylist();
-        
-        if (playlist.length === 1) {
-            playTrack(0);
-        }
-        alert("Đã thêm file từ Google Drive vào danh sách phát!");
-    } else {
-        alert('Link Google Drive không hợp lệ! Hãy đảm bảo bạn dán đúng link chia sẻ.');
-    }
-}
-    // Hiển thị danh sách phát ra giao diện
-    function renderPlaylist() {
-        if (playlist.length === 0) {
-            playlistContainer.innerHTML = '<div style="text-align:center; color:#777; font-size:12px; padding:10px;">Chưa có bài hát nào</div>';
-            return;
-        }
-        playlistContainer.innerHTML = '';
-        playlist.forEach((track, index) => {
-            const item = document.createElement('div');
-            item.className = `playlist-item ${index === currentIndex ? 'active' : ''}`;
-            item.innerText = `${index + 1}. ${track.name}`;
-            item.onclick = () => playTrack(index);
-            playlistContainer.appendChild(item);
-        });
-    }
-
-    // Phát bài hát theo chỉ mục
-    function playTrack(index) {
-        if (index < 0 || index >= playlist.length) return;
-        currentIndex = index;
-        audioPlayer.src = playlist[currentIndex].url;
-        audioPlayer.load();
-        audioPlayer.play().catch(e => console.log("Cần bấm Play thủ công"));
-        renderPlaylist();
-    }
-
-    // Tự động chuyển bài khi kết thúc bài hiện tại
-    audioPlayer.onended = function() {
-        if (currentIndex < playlist.length - 1) {
-            playTrack(currentIndex + 1);
-        }
-    };
-
-    // Hẹn giờ tắt nhạc
-    let countdown;
-    function startTimer() {
-        clearInterval(countdown);
-        const minutes = parseInt(document.getElementById('timerMinutes').value);
-        if (isNaN(minutes) || minutes <= 0) {
-            alert('Vui lòng nhập số phút hợp lệ!');
-            return;
-        }
-
-        let timeRemaining = minutes * 60;
-        const statusDisplay = document.getElementById('timerStatus');
-
-        countdown = setInterval(() => {
-            let m = Math.floor(timeRemaining / 60);
-            let s = timeRemaining % 60;
-            statusDisplay.innerText = `Tự động tắt sau: ${m}p ${s < 10 ? '0' : ''}${s}s`;
-
-            if (timeRemaining <= 0) {
-                clearInterval(countdown);
-                audioPlayer.pause();
-                audioPlayer.currentTime = 0;
-                statusDisplay.innerText = 'Đã hẹn giờ tắt nhạc!';
-            }
-            timeRemaining--;
-        }, 1000);
-    }
-</script>
-
-</body>
-</html>
+                if (foundFiles) {
+                    updatePlaylistUI();
+                    if (currentIndex === -1) playTrack(0);
+                    driveUrlInput.value = '';
+                } else {
+                    // Phương án dự phòng nếu quét HTML thất bại: Thêm file stream tổng quát
+                    alert('Không thể tự động quét hàng loạt file từ thư mục này do chính sách bảo mật của Google. Hãy thử thêm link từng file riêng lẻ!');
+                }
+            })
